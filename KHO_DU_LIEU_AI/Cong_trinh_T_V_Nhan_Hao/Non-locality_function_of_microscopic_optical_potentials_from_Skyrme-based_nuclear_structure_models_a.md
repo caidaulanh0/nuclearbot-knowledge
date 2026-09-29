@@ -1,0 +1,8 @@
+# Non-locality function of microscopic optical potentials from Skyrme-based nuclear structure models at low energies
+
+**DOI:** https://doi.org/10.26459/hueunijns.v135i1b.8422
+
+## Abstract
+We investigate how the velocity-dependent (t1 and t2) and spin-orbit (W0) terms of the Skyrme effective interaction influence the non-locality parameter β of the microscopic optical potential (MOP) for neutron elastic scattering off the doubly closed-shell nuclei 16O, 40Ca, 48Ca, and 208Pb at incident energies below 20 MeV. The MOP is constructed within the particle-vibration coupling framework on top of self-consistent Hartree-Fock plus random-phase approximation calculations by using the SLy5 parametrisation. Three calculation schemes are compared: the full Skyrme interaction, the interaction without t1 and t2, and the interaction without W0 in the residual interaction. The velocity-dependent terms exert a pronounced and mass-dependent influence on β: removing them increases βv by 0.27 fm for 16O but decreases it by 0.50 fm for 208Pb. The spin-orbit term, by contrast, produces much weaker modifications, typically below 0.1 fm. The extracted β values lie in the range 0.70–1.43 fm, with most values exceeding the widely adopted Perey-Buck value of 0.85 fm, suggesting that this empirical parameter underestimates the true microscopic non-locality for most nuclei.
+
+*Note: This paper is likely behind a paywall (e.g. Physical Review C). The abstract is provided for the AI's semantic search.*

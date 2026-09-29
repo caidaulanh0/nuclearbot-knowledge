@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity Physics AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="katex/katex.min.css">
+    <script defer src="katex/katex.min.js"></script>
+    <script defer src="katex/contrib/auto-render.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --chat-bg: #111827;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --user-msg: #1e3a8a;
+            --bot-msg: #1f2937;
+            --border: #374151;
+            --glow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden;
+        }
+        header {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px; text-align: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--glow);
+            z-index: 10;
+        }
+        h1 { margin: 0; font-weight: 600; font-size: 1.5rem; letter-spacing: 1px; color: #fff; }
+        .subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 5px; }
+        
+        #chat-container {
+            flex: 1; overflow-y: auto;
+            padding: 20px;
+            display: flex; flex-direction: column; gap: 15px;
+            scroll-behavior: smooth;
+        }
+        
+        .message {
+            max-width: 80%; padding: 15px 20px;
+            border-radius: 12px; line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+            position: relative;
+            word-wrap: break-word;
+            white-space: pre-line;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--user-msg);
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .bot-message {
+            align-self: flex-start;
+            background-color: var(--bot-msg);
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Markdown Code Blocks */
+        pre { background: #000; padding: 10px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; margin-top: 5px; margin-bottom: 5px; }
+        code { font-family: monospace; color: #10b981; }
+
+        .loading { display: none; align-self: flex-start; margin-left: 10px; color: var(--primary); font-style: italic; font-size: 0.9rem;}
+        .loading.active { display: flex; align-items: center; gap: 8px; }
+        .spinner {
+            width: 15px; height: 15px; border: 2px solid var(--primary);
+            border-top-color: transparent; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #input-area {
+            padding: 20px; background: var(--chat-bg);
+            border-top: 1px solid var(--border);
+            display: flex; gap: 10px;
+            align-items: flex-end;
+        }
+        #message-input {
+            flex: 1; padding: 15px;
+            background: #1f2937; color: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px; font-size: 1rem;
+            transition: all 0.2s; outline: none;
+            resize: none;
+            height: 24px; min-height: 24px; max-height: 120px;
+            overflow-y: auto;
+            font-family: inherit;
+        }
+        #message-input:focus { border-color: var(--primary); box-shadow: var(--glow); }
+        
+        #send-btn {
+            background: var(--primary); color: #fff;
+            border: none; padding: 0 25px; height: 56px;
+            border-radius: 8px; cursor: pointer; font-weight: 600;
+            transition: all 0.2s;
+        }
+        #send-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--glow); }
+        #send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; box-shadow: none;}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ANTIGRAVITY PHYSICS AI</h1>
+        <div class="subtitle">Nuclear Physics Research Automation Bridge • Core V4 · <a href="/ontology.html" style="color:#60a5fa">Sơ đồ tri thức</a> · <a href="/corekb.html" style="color:#a78bfa">Core KB</a></div>
+    </header>
+    
+    <div id="chat-container">
+        <div class="message bot-message">Xin chào! Hệ thống đã kết nối với Core KB và Qdrant. Ngài cần hỗ trợ vấn đề vật lý hạt nhân nào hôm nay?</div>
+    </div>
+    
+    <div class="loading" id="loading-indicator">
+        <div class="spinner"></div> Hệ thống đang suy nghĩ (tiến trình ReAct Loop có thể mất 40-60s)...
+    </div>
+
+    <div id="input-area">
+        <textarea id="message-input" placeholder="Nhập câu hỏi vật lý của bạn..." rows="1"></textarea>
+        <button id="send-btn">Gửi</button>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = '24px';
+            this.style.height = (this.scrollHeight - 30) + 'px'; // adjust for padding
+            if(this.value.trim() === '') this.style.height = '24px';
+        });
+
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user-message');
+            messageInput.value = '';
+            messageInput.style.height = '24px';
+            
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+            loadingIndicator.classList.add('active');
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    appendMessage(`**Lỗi:** ${data.error}`, 'bot-message');
+                } else {
+                    appendMessage(data.answer, 'bot-message');
+                }
+            } catch (err) {
+                appendMessage(`**Lỗi kết nối máy chủ:** ${err.message}`, 'bot-message');
+            } finally {
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                loadingIndicator.classList.remove('active');
+                messageInput.focus();
+            }
+        }
+
+        function appendMessage(text, className) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${className}`;
+            
+            // Format basic markdown
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formattedText = formattedText.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            
+            msgDiv.innerHTML = formattedText;
+
+            // Render LaTeX math (KaTeX) - offline
+            if (window.renderMathInElement) {
+                try {
+                    renderMathInElement(msgDiv, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '\\[', right: '\\]', display: true},
+                            {left: '$', right: '$', display: false},
+                            {left: '\\(', right: '\\)', display: false}
+                        ],
+                        throwOnError: false
+                    });
+                } catch (e) { console.warn('KaTeX render error:', e); }
+            }
+
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>

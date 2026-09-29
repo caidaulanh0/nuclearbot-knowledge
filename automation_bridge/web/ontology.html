@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mạng lưới tri thức — Lớp Não Trong Cùng</title>
+<script src="vis-network.min.js"></script>
+<style>
+  :root { --bg:#0b0f19; --panel:#111827; --border:#374151; --text:#e5e7eb; --muted:#9ca3af; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif;
+         display:flex; flex-direction:column; }
+  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--border); flex:0 0 auto; }
+  h1 { margin:0; font-size:1.2rem; letter-spacing:.5px; }
+  .sub { color:var(--muted); font-size:.82rem; margin-top:4px; }
+  #toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:10px 20px;
+             background:var(--panel); border-bottom:1px solid var(--border); flex:0 0 auto; }
+  button { background:#1f2937; color:#fff; border:1px solid var(--border); border-radius:6px;
+           padding:6px 12px; cursor:pointer; font-size:.85rem; }
+  button:hover { background:#2563eb; }
+  button.active { background:#2563eb; }
+  .legend { display:flex; flex-wrap:wrap; gap:12px; margin-left:auto; font-size:.75rem; color:var(--muted); }
+  .lg { display:inline-flex; align-items:center; gap:5px; }
+  .dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
+  .line { width:20px; height:0; border-top:2px solid; display:inline-block; }
+  #network { flex:1 1 auto; position:relative; height:calc(100vh - 150px); min-height:400px; }
+  #status { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--muted);
+            font-size:.9rem; z-index:5; }
+  #errbox { position:absolute; top:10px; left:10px; right:10px; background:#7f1d1d; color:#fecaca;
+            padding:12px 16px; border-radius:8px; border:1px solid #b91c1c; font-size:.82rem;
+            display:none; white-space:pre-wrap; z-index:10; max-height:40%; overflow:auto; }
+  #info { position:absolute; top:12px; right:12px; background:rgba(17,24,39,.94);
+          padding:10px 14px; border-radius:8px; border:1px solid var(--border);
+          font-size:.8rem; max-width:340px; display:none; z-index:8; }
+  #info b { color:#93c5fd; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 Mạng lưới tri thức — "Lớp Não Trong Cùng"</h1>
+  <div class="sub">146 khái niệm · 188 liên kết — click nút xem quan hệ, kéo di chuyển, lăn chuột zoom</div>
+</header>
+<div id="toolbar">
+  <button id="btn-tree" class="active" onclick="setLayout(true)">🌳 Cây phân nhánh</button>
+  <button id="btn-force" onclick="setLayout(false)">🕸 Mạng lưới</button>
+  <button id="btn-cross" class="active" onclick="toggleCross()">🔗 Hiện liên kết chéo</button>
+  <div class="legend">
+    <span class="lg"><span class="dot" style="background:#f59e0b"></span>Gốc (tầng 1)</span>
+    <span class="lg"><span class="dot" style="background:#3b82f6"></span>Nhánh (tầng 2)</span>
+    <span class="lg"><span class="dot" style="background:#10b981"></span>Lá (tầng 3)</span>
+    <span class="lg"><span class="line" style="border-color:#64748b"></span>is_a (thuộc)</span>
+    <span class="lg"><span class="line" style="border-color:#f472b6;border-style:dashed"></span>liên kết chéo</span>
+  </div>
+</div>
+<div id="network"><div id="status">Đang tải dữ liệu...</div></div>
+<div id="errbox"></div>
+<div id="info"></div>
+
+<script>
+window.onerror = function(msg, src, line) {
+  var e = document.getElementById('errbox');
+  e.style.display = 'block';
+  e.textContent = 'JS ERROR: ' + msg + ' (line ' + line + ')';
+};
+
+var TIER_COLOR = {1:'#f59e0b', 2:'#3b82f6', 3:'#10b981'};
+var CAT_COLOR = {
+  'Cơ bản':'#34d399','Nâng cao':'#2dd4bf','Cơ sở':'#10b981','Cấu trúc':'#a78bfa',
+  'Phản ứng':'#fb923c','Nguyên tử':'#f472b6','Thống kê':'#facc15','Điện từ':'#60a5fa',
+  'Cơ học':'#94a3b8','ĐSTT':'#38bdf8','Giải tích':'#f472b6','PDE':'#4ade80',
+  'Xác suất':'#fbbf24','Nhóm':'#c084fc','Số':'#22d3ee','trunk':'#f59e0b','branch':'#3b82f6'
+};
+function nodeColor(n) {
+  if (n.tier === 1) return {background:TIER_COLOR[1], border:'#fbbf24'};
+  if (n.tier === 2) return {background:TIER_COLOR[2], border:'#93c5fd'};
+  var c = CAT_COLOR[n.category] || '#10b981';
+  return {background:c, border:c};
+}
+
+var nodesDS, edgesDS, network, allEdges = [], crossOn = true;
+
+function buildEdges() {
+  return allEdges.map(function(e) {
+    var isCross = e.relation !== 'is_a';
+    return {from:e.from, to:e.to, relation:e.relation,
+      color: isCross ? {color:'#f472b6', highlight:'#fb7185'} : {color:'#64748b', highlight:'#94a3b8'},
+      dashes: isCross ? [4,4] : false,
+      width: isCross ? 1.6 : 1,
+      hidden: isCross ? !crossOn : false};
+  });
+}
+
+async function init() {
+  var st = document.getElementById('status');
+  try {
+    if (typeof vis === 'undefined') { throw new Error('thu vien vis-network chua load (vis undefined)'); }
+
+    st.textContent = 'Đang tải dữ liệu...';
+    var res = await fetch('/api/ontology');
+    var data = await res.json();
+    if (data.error) { throw new Error(data.error); }
+    if (!data.nodes || !data.nodes.length) { throw new Error('khong co du lieu nodes'); }
+
+    allEdges = data.edges || [];
+
+    nodesDS = new vis.DataSet(data.nodes.map(function(n) {
+      var col = nodeColor(n);
+      return {
+        id: n.id, label: n.label, tier: n.tier, category: n.category,
+        title: '[' + n.tier + '] ' + n.label + (n.category ? ' (' + n.category + ')' : ''),
+        shape: 'dot',
+        size: (n.tier === 1 ? 28 : (n.tier === 2 ? 20 : 13)),
+        font: {size: (n.tier === 1 ? 15 : (n.tier === 2 ? 12 : 9)), color: '#fff'},
+        color: {background: col.background, border: col.border, highlight: {background: col.background, border: '#fff'}}
+      };
+    }));
+
+    edgesDS = new vis.DataSet(buildEdges());
+
+    var container = document.getElementById('network');
+    st.textContent = 'Đang vẽ...';
+    network = new vis.Network(container, {nodes: nodesDS, edges: edgesDS}, {
+      layout: {hierarchical: {enabled: true, direction: 'UD', sortMethod: 'directed', levelSeparation: 140, nodeSpacing: 80}},
+      physics: {enabled: true, hierarchicalRepulsion: {nodeDistance: 120}},
+      interaction: {hover: true, tooltipDelay: 120},
+      edges: {smooth: {type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.4}}
+    });
+
+    st.style.display = 'none';
+    document.getElementById('errbox').textContent = '';
+    document.getElementById('errbox').style.display = 'none';
+
+    network.on('click', function(p) {
+      var info = document.getElementById('info');
+      if (p.nodes.length === 0) { info.style.display = 'none'; return; }
+      var nid = p.nodes[0];
+      var n = nodesDS.get(nid);
+      var rels = allEdges.filter(function(e) { return e.from === nid || e.to === nid; });
+      var html = '<b>' + n.label + '</b> [tầng ' + n.tier + (n.category ? ', ' + n.category : '') + ']<br>';
+      var parents = rels.filter(function(e) { return e.from === nid && e.relation === 'is_a'; });
+      if (parents.length) html += '↖ thuộc: ' + parents.map(function(e){return nodesDS.get(e.to).label;}).join(', ') + '<br>';
+      var out = rels.filter(function(e) { return e.from === nid && e.relation !== 'is_a'; });
+      var inc = rels.filter(function(e) { return e.to === nid && e.relation !== 'is_a'; });
+      if (out.length) html += '→ ' + out.map(function(e){return e.relation + ' ' + nodesDS.get(e.to).label;}).join('<br>→ ') + '<br>';
+      if (inc.length) html += '← ' + inc.map(function(e){return nodesDS.get(e.from).label + ' (' + e.relation + ')';}).join('<br>← ');
+      info.innerHTML = html;
+      info.style.display = 'block';
+    });
+
+  } catch (err) {
+    st.textContent = '';
+    var eb = document.getElementById('errbox');
+    eb.style.display = 'block';
+    eb.textContent = 'LỖI: ' + (err && err.message ? err.message : err);
+  }
+}
+
+function toggleCross() {
+  crossOn = !crossOn;
+  document.getElementById('btn-cross').classList.toggle('active', crossOn);
+  if (edgesDS) { edgesDS.clear(); edgesDS.add(buildEdges()); }
+}
+
+function setLayout(treeMode) {
+  document.getElementById('btn-tree').classList.toggle('active', treeMode);
+  document.getElementById('btn-force').classList.toggle('active', !treeMode);
+  if (network) network.setOptions({layout: {hierarchical: {enabled: treeMode}}});
+}
+
+init();
+</script>
+</body>
+</html>

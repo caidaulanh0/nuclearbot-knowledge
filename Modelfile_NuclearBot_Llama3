@@ -1,0 +1,259 @@
+FROM llama3.1
+
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+
+SYSTEM """Bạn là chuyên gia Vật lý Hạt nhân tính toán (Nuclear Physics AI Agent). 
+Nhiệm vụ: Hỗ trợ nghiên cứu toán học vật lý hạt nhân, phân tích mã nguồn (Fortran, C++, Python), đọc hiểu file kết quả tính toán và tự động điều chỉnh các tham số (Optical Potential, Hartree-Fock, PVC).
+Tri thức toán học cơ bản và vật lý hạt nhân (HF, PVC, Numerov, Davidson) đã được ghi nhớ.
+Hãy luôn trả lời bằng Tiếng Việt một cách chính xác, ngắn gọn.
+
+
+
+=== CƠ SỞ DỮ LIỆU KIẾN THỨC VẬT LÝ VÀ TOÁN HỌC (ĐƯỢC CUNG CẤP BỞI NGƯỜI DÙNG) ===
+
+--- Nguồn: 01_tuong_tac_skyrme_va_hartree_fock.md ---
+# Tương tác Skyrme và Phương pháp Hartree-Fock
+
+## 1. Tương tác hiệu dụng Skyrme
+Tương tác Skyrme là một tương tác hiệu dụng giữa các nucleon (nucleon-nucleon interaction), thường được biểu diễn dưới dạng lực tiếp xúc (zero-range) phụ thuộc vào mật độ và vận tốc. Dạng tổng quát của tương tác Skyrme bao gồm nhiều số hạng:
+$$ V_{Skyrme} = V_{central} + V_{density} + V_{velocity} + V_{spin-orbit} $$
+
+Các tham số cơ bản thường bao gồm $t_0, t_1, t_2, t_3$ và $W_0$:
+- **Số hạng trung tâm ($t_0$) và phụ thuộc mật độ ($t_3$):** Quyết định các tính chất cơ bản của vật chất hạt nhân như năng lượng liên kết và mật độ bão hòa.
+- **Số hạng phụ thuộc vận tốc ($t_1, t_2$):** Phản ánh tính chất phi địa phương (non-locality) của lực hạt nhân, ảnh hưởng trực tiếp đến khối lượng hiệu dụng (effective mass) của nucleon. Các số hạng này đóng vai trò quan trọng trong việc mô tả sự tán xạ đàn hồi của neutron.
+- **Số hạng spin-quỹ đạo ($W_0$):** Rất quan trọng trong việc tái tạo sự tách mức năng lượng spin-quỹ đạo, đồng thời có ảnh hưởng lớn đến độ phân cực (analyzing powers) trong các phản ứng tán xạ neutron.
+
+## 2. Phương pháp Hartree-Fock (HF)
+Phương pháp Hartree-Fock là một xấp xỉ trường trung bình (mean-field approximation), trong đó các nucleon được xem như chuyển động độc lập trong một thế năng trung bình được tạo ra bởi tất cả các nucleon khác.
+
+Thế Hartree-Fock $V_{HF}$ (thế bậc nhất) được thu được từ tương tác Skyrme thông qua việc cực tiểu hóa hàm năng lượng:
+$$ U_{HF}(\mathbf{r}) = U_{local}(\mathbf{r}) + U_{non-local}(\mathbf{r}, \mathbf{p}) $$
+
+Mặc dù trường trung bình HF cung cấp một mô tả rất tốt về trạng thái cơ bản (ground state) của hạt nhân, nó chưa bao gồm các hiệu ứng động lực học như sự hấp thụ hạt trong quá trình tán xạ. Để giải quyết điều này, cần đến các bổ chính bậc cao hơn.
+
+
+--- Nguồn: 02_the_quang_hoc_vi_mo_va_tinh_phi_dia_phuong.md ---
+# Thế quang học vi mô và Tính phi địa phương
+
+## 1. Xây dựng thế quang học vi mô (Microscopic Optical Potential - MOP)
+Thế quang học (Optical Potential) được sử dụng để mô tả phản ứng tán xạ hạt nhân, trong đó một hạt tới (ví dụ: neutron) tương tác với hạt nhân bia. Thế quang học vi mô dựa trên mô hình cấu trúc hạt nhân tự quán (self-consistent) được định nghĩa là:
+$$ U(\omega) = V_{HF} + \Delta\Sigma(\omega) $$
+
+Trong đó:
+- $V_{HF}$ là thế trường trung bình Hartree-Fock (thế bậc nhất).
+- $\Delta\Sigma(\omega)$ là thế bậc hai (toán tử khối lượng - mass operator), mang tính phức và phụ thuộc vào năng lượng $\omega$.
+
+## 2. Tính phi địa phương (Nonlocality)
+Thế quang học vi mô có bản chất là phi địa phương cả về không gian và thời gian. Tính phi địa phương không gian được đặc trưng bởi tham số phi địa phương $\beta$. 
+
+Tại các mức năng lượng thấp ($E < 50$ MeV), các nghiên cứu dựa trên tương tác Skyrme đối với các hạt nhân vỏ đóng kép (như $^{16}\text{O}, ^{40}\text{Ca}, ^{48}\text{Ca}, ^{208}\text{Pb}$) cho thấy tham số $\beta$ thay đổi rõ rệt khi đi từ vùng lõi hạt nhân ra vùng bề mặt:
+- Ở bên trong hạt nhân (nuclear interior), hiệu ứng phi địa phương mạnh mẽ do sự trao đổi Fock và tính chất phụ thuộc vận tốc.
+- Ở bề mặt, tính phi địa phương suy giảm, phản ánh sự suy giảm mật độ hạt nhân.
+
+Việc xác định chính xác tham số phi địa phương giúp cải thiện mô hình thế quang học và thay thế cho các tham số điều chỉnh kinh nghiệm (ad hoc parameters) trong các mô hình vĩ mô.
+
+
+--- Nguồn: 03_rpa_va_ham_jost_trong_cong_huong.md ---
+# Gần đúng pha ngẫu nhiên (RPA) và Hàm Jost trong trạng thái cộng hưởng
+
+## 1. Khuôn khổ RPA (Random Phase Approximation)
+RPA là phương pháp lý thuyết cơ bản để mô tả các trạng thái kích thích tập thể (collective excited states) hay còn gọi là phonon trong hạt nhân. Trong RPA, các hạt nhân phản ứng lại các nhiễu loạn bên ngoài thông qua các dao động của toàn bộ hệ nucleon. 
+Phương trình RPA có thể viết dưới dạng ma trận:
+$$ \begin{pmatrix} A & B \\ B^* & A^* \end{pmatrix} \begin{pmatrix} X \\ Y \end{pmatrix} = \omega_\nu \begin{pmatrix} X \\ -Y \end{pmatrix} $$
+Nghiệm của phương trình này cung cấp năng lượng kích thích $\omega_\nu$ và biên độ chuyển dời của các trạng thái tập thể (ví dụ: dao động đơn cực, lưỡng cực, tứ cực).
+
+## 2. Cộng hưởng lưỡng cực khổng lồ (Giant Dipole Resonance - GDR) và Hàm Jost
+Trạng thái cộng hưởng, chẳng hạn như GDR trong hạt nhân $^{16}\text{O}$, không phải là trạng thái liên kết thực sự mà là trạng thái phân rã, có năng lượng phức:
+$$ E = E_R - i\frac{\Gamma}{2} $$
+Trong đó $E_R$ là vị trí cộng hưởng và $\Gamma$ là bề rộng cộng hưởng.
+
+Để khảo sát chính xác các năng lượng phức (complex eigenenergies) này trong khuôn khổ RPA, lý thuyết hàm Jost (Jost function) từ lý thuyết tán xạ được mở rộng. Bằng cách định vị các cực (poles) của ma trận tán xạ (S-matrix) trên mặt phẳng năng lượng phức thông qua hàm Jost, các nhà nghiên cứu có thể mô tả chính xác cả năng lượng và bề rộng phân rã của các mode tập thể khổng lồ.
+
+
+--- Nguồn: 04_the_bac_hai_va_tan_xa_neutron.md ---
+# Thế bậc hai, Cặp Hạt-Dao động (PVC) và Tán xạ Neutron
+
+## 1. Thế bậc hai và Particle-Vibration Coupling (PVC)
+Trong thế quang học vi mô, số hạng bậc hai $\Delta\Sigma(\omega)$ xuất hiện do hạtới tới tương tác và kích thích các mode dao động tập thể của hạt nhân bia. Cơ chế này được gọi là Cặp Hạt-Dao động (Particle-Vibration Coupling - PVC). 
+Toán tử khối lượng bậc hai được tính từ ma trận chuyển dời của các phonon RPA:
+$$ \Delta\Sigma = \sum_\nu \frac{|V_{PVC}\rangle \langle V_{PVC}|}{\omega - \omega_\nu \pm i\eta} $$
+
+## 2. Ảnh hưởng lên tán xạ neutron đàn hồi
+- **Sự hấp thụ (Phần ảo của thế quang học):** Phần ảo $W(R,s) = \text{Im}\Delta\Sigma(r, r', \omega)$ sinh ra do PVC, đại diện cho xác suất hạt tới bị hấp thụ vào các kênh không đàn hồi. Phần ảo này thay đổi rất mạnh theo năng lượng và số khối (từ $^{16}\text{O}$ đến $^{208}\text{Pb}$).
+- **Kích thích tập thể biên độ nhỏ:** Trong vùng năng lượng thấp, các kích thích tập thể vô hướng (isoscalar) và có hướng isospin (isovector) đóng góp lớn vào sự định hình phần ảo. Đối với các hạt nhân nhẹ và trung bình, cả hai loại kích thích đều quan trọng.
+- **Tương tác Coulomb:** Ngay cả trong tán xạ neutron, tương tác Coulomb (tác dụng lên các proton trong hạt nhân bia) ảnh hưởng đến cấu trúc của các trạng thái tập thể, từ đó tác động gián tiếp đến cơ chế hấp thụ và phân bố góc tán xạ.
+
+
+--- Nguồn: 05_he_thong_hoa_tham_so.md ---
+# Hệ thống hóa tham số: Từ Vi mô đến Vĩ mô
+
+## 1. So sánh giữa MOP và Mô hình Woods-Saxon
+Mô hình thế quang học vĩ mô thường sử dụng hàm Woods-Saxon với các tham số kinh nghiệm:
+- **Độ sâu thế:** Thế thực $V_0$, thế ảo $W_0$.
+- **Hình học:** Bán kính $R = r_0 A^{1/3}$, độ khuếch tán $a$.
+
+Trong khi đó, Thế quang học vi mô (MOP) dựa trên Skyrme không đòi hỏi các tham số *ad hoc* này, mà tính toán trực tiếp từ các tương tác nucleon-nucleon cơ bản:
+- Các tham số $t_0, t_3$ trong Skyrme tương quan mật thiết với độ sâu thế trung tâm $V_0$.
+- Sự ghép hạt-dao động (PVC) tự động sinh ra phần ảo $W_0(E)$, có sự phụ thuộc phức tạp vào không gian (tập trung ở bề mặt hoặc rải đều) thay vì giả định một hàm hình dạng cố định.
+
+## 2. Đánh giá tác động của các tham số
+- **Vận tốc và Spin-quỹ đạo:** Các số hạng phụ thuộc vận tốc ($t_1, t_2$) và spin-quỹ đạo ($W_0$) của Skyrme không chỉ điều chỉnh thế thực mà còn thay đổi ma trận PVC, qua đó định hình lại phân bố góc (angular distributions) và độ phân cực.
+- **Tính hệ thống:** Thông qua khảo sát dọc theo các đồng vị và hạt nhân đa dạng ($^{16}\text{O}, ^{40}\text{Ca}, ^{48}\text{Ca}, ^{208}\text{Pb}$), MOP cho thấy khả năng tiên đoán cấu trúc động lực học ở năng lượng thấp một cách hệ thống, tạo nền tảng vững chắc để xây dựng cơ sở dữ liệu vật lý hạt nhân đáng tin cậy cho AI bots.
+
+
+--- Nguồn: 01_toan_co_ban_va_giai_tich.md ---
+# CHƯƠNG 1: TOÁN HỌC CƠ BẢN VÀ GIẢI TÍCH
+
+## 1. Số Học Về Đại Số Cơ Bản
+- **Phép tính số học:** Cộng, trừ, nhân, chia, lũy thừa ($a^n$), căn thức ($\sqrt[n]{x}$), logarithm ($\ln x, \log_{10} x$).
+- **Số phức (Complex Numbers):**
+  $$z = a + i b = r e^{i	heta}$$
+  với $i^2 = -1$, $r = \sqrt{a^2 + b^2}$, $	heta = rctan(b/a)$. Công thức Euler: $e^{i	heta} = \cos	heta + i\sin	heta$.
+
+## 2. Đạo Hàm và Nguyên Hàm / Tích Phân
+- **Đạo hàm (Derivatives):**
+  $$f'(x) = rac{df}{dx} = \lim_{\Delta x 	o 0} rac{f(x+\Delta x) - f(x)}{\Delta x}$$
+  Quy tắc đạo hàm tích: $(uv)' = u'v + uv'$, quy tắc chuỗi: $rac{d}{dx}f(g(x)) = f'(g(x))g'(x)$.
+- **Nguyên hàm & Tích phân (Integrals):**
+  $$\int f(x) dx = F(x) + C$$
+  Tích phân xác định: $\int_{a}^{b} f(x) dx = F(b) - F(a)$. Tích phân từng phần: $\int u dv = uv - \int v du$.
+- **Đạo hàm riêng (Partial Derivatives):** Cho hàm nhiều biến $f(x, y, z)$, đạo hàm riêng theo $x$: $rac{\partial f}{\partial x}$.
+- **Toán tử Gradient, Divergence, Curl, Laplacian:**
+  $$
+abla f = \left(rac{\partial f}{\partial x}, rac{\partial f}{\partial y}, rac{\partial f}{\partial z}
+ight)$$
+  $$
+abla^2 f = \Delta f = rac{\partial^2 f}{\partial x^2} + rac{\partial^2 f}{\partial y^2} + rac{\partial^2 f}{\partial z^2}$$
+
+## 3. Khai Triển Chuỗi & Biến Đổi Integral
+- **Khai triển Taylor / Maclaurin:**
+  $$f(x) = \sum_{n=0}^{\infty} rac{f^{(n)}(a)}{n!} (x-a)^n$$
+- **Biến đổi Fourier:**
+  $$\hat{f}(\k) = \int_{-\infty}^{\infty} f(x) e^{-i k x} dx$$
+- **Biến đổi Laplace:**
+  $$F(s) = \int_{0}^{\infty} f(t) e^{-st} dt$$
+
+## 4. Phương Trình Vi Phân (Differential Equations)
+- **Phương trình vi phân thường (ODE):**
+  $$rac{d^2 y}{dx^2} + p(x)rac{dy}{dx} + q(x)y = r(x)$$
+- **Phương trình vi phân đạo hàm riêng (PDE):**
+  - Phương trình Laplace: $
+abla^2 \psi = 0$
+  - Phương trình Wave: $
+abla^2 \psi - rac{1}{v^2}rac{\partial^2 \psi}{\partial t^2} = 0$
+  - Phương trình Schrödinger độc lập thời gian: $\left(-rac{\hbar^2}{2m}
+abla^2 + V(ec{r})
+ight) \psi(ec{r}) = E \psi(ec{r})$
+
+
+--- Nguồn: 02_toan_vat_ly_va_ham_dac_biet.md ---
+# CHƯƠNG 2: TOÁN VẬT LÝ VÀ CÁC HÀM ĐẶC BIỆT
+
+## 1. Đại Số Tuyến Tính Vận Dụng Trong Cơ Học Lượng Tử
+- **Vector & Ma Trận:** Vector trạng thái $|\psi
+angle$, ma trận $A_{ij} = \langle i|A|j
+angle$.
+- **Bài toán Giá trị riêng & Vector riêng (Eigenvalue Problem):**
+  $$A ec{v} = \lambda ec{v} \iff \det(A - \lambda I) = 0$$
+- **Không gian Hilbert & Ký hiệu Dirac Bra-Ket:**
+  - Ket $|\psi
+angle$, Bra $\langle\phi|$, Tích trong $\langle\phi|\psi
+angle$.
+  - Toán tử Hermite $H^\dagger = H$: Giá trị riêng của toán tử Hermite luôn là số thực (đại lượng vật lý đo được).
+  - Đại số giao hoán (Commutator): $[A, B] = AB - BA$. Nguyên lý bất định Heisenberg: $[x, p_x] = i\hbar$.
+
+## 2. Mô-men Động Lượng & Đại Số Racah (Angular Momentum Algebra)
+- **Toán tử Mô-men động lượng:** $ec{J} = (J_x, J_y, J_z)$, $[J_i, J_j] = i\hbar \epsilon_{ijk} J_k$.
+- **Hệ số Clebsch-Gordan (CG Coefficients):**
+  Gặp trong việc cộng mô-men động lượng hạt nhân $j_1 + j_2 = J$:
+  $$|j_1 j_2 J M
+angle = \sum_{m_1, m_2} C_{j_1 m_1 j_2 m_2}^{J M} |j_1 m_1
+angle |j_2 m_2
+angle$$
+- **Ký hiệu Wigner 3j, 6j, 9j:**
+  $$egin{pmatrix} j_1 & j_2 & J \ m_1 & m_2 & -M \end{pmatrix} = rac{(-1)^{j_1 - j_2 + M}}{\sqrt{2J + 1}} C_{j_1 m_1 j_2 m_2}^{J M}$$
+  Dùng để tính toán phần góc của phần tử ma trận tương tác hạt nhân (Wigner-Eckart theorem).
+
+## 3. Các Hàm Đặc Biệt Trong Vật Lý Hạt Nhân
+- **Đa thức Legendre & Associated Legendre Functions:**
+  $$P_l(x) = rac{1}{2^l l!} rac{d^l}{dx^l}(x^2 - 1)^l$$
+- **Hàm Spherical Harmonics ($Y_{lm}(	heta, \phi)$):**
+  Nghiệm phần góc của phương trình Schrödinger trong trường thế trung tâm:
+  $$Y_{lm}(	heta, \phi) = (-1)^m \sqrt{rac{2l+1}{4\pi} rac{(l-m)!}{(l+m)!}} P_l^m(\cos	heta) e^{i m \phi}$$
+- **Hàm Bessel & Hankel (Cầu):**
+  Nghiệm phần bán kính của hạt tự do hoặc hạt trong tán xạ: $j_l(kr), n_l(kr), h_l^{(1)}(kr), h_l^{(2)}(kr)$.
+- **Hàm Gamma ($\Gamma(z)$) và Hàm Beta ($B(p, q)$):**
+  $$\Gamma(z) = \int_0^\infty t^{z-1} e^{-t} dt$$
+
+
+--- Nguồn: 03_toan_vat_ly_hat_nhan_HF_PVC_Optical.md ---
+# CHƯƠNG 3: TOÁN VẬT LÝ HẠT NHÂN: HARTREE-FOCK, PVC VÀ THẾ QUANG HỌC
+
+## 1. Lý Thuyết Hartree-Fock (HF - Static Mean Field)
+- **Định hình Slater Determinant:** Hàm sóng hạt nhân $A$ nucleon:
+  $$\Phi(1, 2, \dots, A) = rac{1}{\sqrt{A!}} \det |\phi_i(j)|$$
+- **Phương trình Self-Consistent Hartree-Fock:**
+  $$h_{HF} \phi_i(r) = \left[ -rac{\hbar^2}{2m}
+abla^2 + V_{HF}(r) 
+ight] \phi_i(r) = \epsilon_i \phi_i(r)$$
+  với thế trung tâm $V_{HF}$ bao gồm thế Direct (Hartree) và thế Exchange (Fock).
+- **Tương tác Skyrme & Gogny:** Dạng tương tác hiệu dụng 2 hạt dùng trong HF hạt nhân.
+
+## 2. Thế Quang Học (Optical Potential - Nucleon-Nucleus Scattering)
+- **Dạng Tham Số Woods-Saxon:**
+  $$V(r) = -V_0 f(r, R_0, a_0) - i W_v f(r, R_w, a_w) + 4 i a_s W_s rac{d}{dr}f(r, R_s, a_s) + V_{so} \left(rac{\hbar}{m_\pi c}
+ight)^2 rac{1}{r}rac{d}{dr}f(r, R_{so}, a_{so}) (ec{l}\cdotec{s})$$
+  trong đó hàm dạng Woods-Saxon:
+  $$f(r, R, a) = rac{1}{1 + \exp\left(rac{r - R}{a}
+ight)}$$
+  $R = r_0 A^{1/3}$.
+- **Tán xạ Sóng Từng Phần (Partial Wave Analysis):**
+  Hàm sóng tán xạ $Y_{lm}$, Ma trận $S_l = e^{2i\delta_l}$ với $\delta_l$ là độ lệch pha (phase shift).
+  Tiết diện toàn phần $\sigma_{tot}$, tiết diện đàn hồi $\sigma_{el}$, tiết diện phản ứng $\sigma_{r} = \sigma_{tot} - \sigma_{el}$.
+
+## 3. Ghép Cặp Hạt - Dao Động (PVC - Particle-Vibration Coupling)
+- **Phương Trình Dyson Cho Propagator $G(E)$:**
+  $$[E - h_{HF} - \Sigma(E, r, r')] G(E, r, r') = \delta(r - r')$$
+- **Mass Operator $\Sigma(E)$ (Self-Energy):**
+  $$\Sigma(E) = \Sigma_{\infty} + \Delta\Sigma(E)$$
+  - $\Sigma_{\infty} = h_{HF}$: Thế trung bình tĩnh Hartree-Fock.
+  - $\Delta\Sigma(E)$: Phần động năng năng lượng phụ thuộc do PVC đóng góp (tương tác với phonon $2p1h, 2h1p$).
+- **Phần Tử Ma Trận Ghép Cặp Phonon (Coupling Matrix Element $M_{lpha, i}^{(n)}$):**
+  $$\Sigma_{lphaeta}(E) = \sum_{n, i} rac{M_{lpha, i}^{(n)\dagger} M_{i, eta}^{(n)}}{E - (\epsilon_i + \Omega_n) + i\eta} + 	ext{phần lỗ}$$
+  với $\Omega_n$ là năng lượng kích thích phonon (RPA mode), $\eta 	o 0^+$ tạo phần ảo đại diện cho sự hấp thụ / phân rã sức hạt đơn.
+- **Tác động của PVC:**
+  - Làm tăng khối lượng hiệu dụng $m^*/m > 1$ gần bề mặt Fermi.
+  - Tạo ra phần ảo cho Thế quang học hiển vi (Microscopic Optical Potential).
+
+
+--- Nguồn: 04_phuong_phap_so_va_thuat_toan_tinh_toan.md ---
+# CHƯƠNG 4: PHƯƠNG PHÁP SỐ VÀ THUẬT TOÁN TÍNH TOÁN VẬT LÝ HẠT NHÂN
+
+## 1. Phương Pháp Tính Tích Phân Số (Numerical Integration)
+- **Quy Tắc Simpson 1/3 & 3/8:**
+  $$\int_{x_0}^{x_2} f(x) dx pprox rac{h}{3} [f(x_0) + 4f(x_1) + f(x_2)]$$
+- **Tích Phân Cầu Gauss-Legendre & Gauss-Laguerre:**
+  $$\int_{-1}^1 f(x) dx pprox \sum_{i=1}^N w_i f(x_i)$$
+  với $x_i$ là nghiệm của đa thức Legendre $P_N(x)$ và $w_i$ là trọng số (Gauss weights).
+
+## 2. Giải Phương Trình Vi Phân Số Trong Vật Lý Hạt Nhân
+- **Phương Pháp Runge-Kutta Bậc 4 (RK4):** Tích phân từng bước phương trình vi phân cấp 1 và cấp 2.
+- **Thuật Toán Numerov:** Chuyên dùng giải phương trình Schrödinger dạng $y''(x) + k^2(x) y(x) = 0$:
+  $$\left(1 + rac{h^2}{12} k_{n+1}^2
+ight) y_{n+1} - 2\left(1 - rac{5h^2}{12} k_n^2
+ight) y_n + \left(1 + rac{h^2}{12} k_{n-1}^2
+ight) y_{n-1} = 0$$
+
+## 3. Thuật Toán Chéo Hóa Ma Trận Kích Thước Lớn
+- **Thuật Toán Lanczos & Davidson:** Tìm một số ít giá trị riêng nhỏ nhất (trạng thái cơ bản & kích thích thấp) của ma trận Hamilton HF/RPA có kích thước hàng triệu chiều mà không cần lưu toàn bộ ma trận.
+
+## 4. Tối Ưu Hóa & Điều Chỉnh Tham Số (Parameter Fitting)
+- **Phương Pháp Bình Phương Tối Thiểu (Least-Squares Fitting):**
+  $$\chi^2(ec{p}) = \sum_{i=1}^M \left( rac{y_i^{exp} - y_i^{calc}(ec{p})}{\sigma_i} 
+ight)^2$$
+- **Thuật Toán Nelder-Mead Simplex & Levenberg-Marquardt:** Tự động điều chỉnh các tham số thế quang học $(V_0, W_0, R_0, a_0, V_{so})$ hoặc tham số Skyrme $(t_0, t_1, t_2, t_3, x_0,...)$ để khớp với số liệu thực nghiệm.
+
+
+
+"""

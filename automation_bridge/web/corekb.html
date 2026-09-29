@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Core KB — Lớp Não Thứ 2</title>
+<script src="vis-network.min.js"></script>
+<style>
+  :root { --bg:#0b0f19; --panel:#111827; --border:#374151; --text:#e5e7eb; --muted:#9ca3af; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; display:flex; flex-direction:column; }
+  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--border); flex:0 0 auto; }
+  h1 { margin:0; font-size:1.2rem; letter-spacing:.5px; }
+  .sub { color:var(--muted); font-size:.82rem; margin-top:4px; }
+  #toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:10px 20px; background:var(--panel); border-bottom:1px solid var(--border); flex:0 0 auto; }
+  .legend { display:flex; flex-wrap:wrap; gap:12px; font-size:.75rem; color:var(--muted); }
+  .lg { display:inline-flex; align-items:center; gap:5px; }
+  .dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
+  .line { width:20px; height:0; border-top:2px solid; display:inline-block; }
+  #network { flex:1 1 auto; position:relative; height:calc(100vh - 150px); min-height:400px; }
+  #status { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--muted); font-size:.9rem; z-index:5; }
+  #errbox { position:absolute; top:10px; left:10px; right:10px; background:#7f1d1d; color:#fecaca; padding:12px 16px; border-radius:8px; border:1px solid #b91c1c; font-size:.82rem; display:none; white-space:pre-wrap; z-index:10; max-height:40%; overflow:auto; }
+  #info { position:absolute; top:12px; right:12px; background:rgba(17,24,39,.94); padding:10px 14px; border-radius:8px; border:1px solid var(--border); font-size:.8rem; max-width:360px; display:none; z-index:8; }
+  #info b { color:#93c5fd; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 Core KB — "Lớp Não Thứ 2" (mạng lưới sự kiện)</h1>
+  <div class="sub">Hằng số · Định luật · Công thức · Đồng vị · Đơn vị + quan hệ chặt chẽ — click nút xem quan hệ, kéo di chuyển, lăn chuột zoom</div>
+</header>
+<div id="toolbar">
+  <div class="legend">
+    <span class="lg"><span class="dot" style="background:#f59e0b"></span>Hằng số</span>
+    <span class="lg"><span class="dot" style="background:#3b82f6"></span>Định luật</span>
+    <span class="lg"><span class="dot" style="background:#10b981"></span>Công thức</span>
+    <span class="lg"><span class="dot" style="background:#f472b6"></span>Đồng vị</span>
+    <span class="lg"><span class="dot" style="background:#a78bfa"></span>Đơn vị</span>
+    <span class="lg"><span class="dot" style="background:#64748b"></span>Định nghĩa</span>
+  </div>
+</div>
+<div id="network"><div id="status">Đang tải dữ liệu...</div></div>
+<div id="errbox"></div>
+<div id="info"></div>
+
+<script>
+window.onerror = function(msg, src, line) {
+  var e = document.getElementById('errbox');
+  e.style.display = 'block';
+  e.textContent = 'JS ERROR: ' + msg + ' (line ' + line + ')';
+};
+
+var TYPE_COLOR = {
+  'constant':'#f59e0b','law':'#3b82f6','equation':'#10b981',
+  'isotope':'#f472b6','unit':'#a78bfa','definition':'#64748b'
+};
+var TYPE_LABEL = {
+  'constant':'Hằng số','law':'Định luật','equation':'Công thức',
+  'isotope':'Đồng vị','unit':'Đơn vị','definition':'Định nghĩa'
+};
+var REL_COLOR = {
+  'uses':'#34d399','defined_by':'#60a5fa','derived_from':'#fb923c',
+  'decays_to':'#ef4444','composed_of':'#a78bfa','measured_in':'#9ca3af',
+  'converts_to':'#2dd4bf','interacts_via':'#f472b6','is_isotope_of':'#facc15',
+  'relates_to':'#64748b','appears_in':'#93c5fd'
+};
+
+var nodesDS, edgesDS, network, allEdges = [];
+
+function nodeSize(n) {
+  if (n.type === 'constant' || n.type === 'law') return 22;
+  if (n.type === 'equation') return 19;
+  if (n.type === 'isotope') return 16;
+  if (n.type === 'unit') return 13;
+  return 12;
+}
+
+function buildEdges() {
+  return allEdges.map(function(e) {
+    var c = REL_COLOR[e.relation] || '#64748b';
+    return {from:e.from, to:e.to, relation:e.relation,
+      color: {color:c, highlight:'#fff'},
+      width: (e.relation === 'uses' || e.relation === 'defined_by') ? 2 : 1.3,
+      dashes: (e.relation === 'relates_to') ? [3,3] : false};
+  });
+}
+
+async function init() {
+  var st = document.getElementById('status');
+  try {
+    if (typeof vis === 'undefined') { throw new Error('thu vien vis-network chua load'); }
+    st.textContent = 'Đang tải dữ liệu...';
+    var res = await fetch('/api/corekb');
+    var data = await res.json();
+    if (data.error) { throw new Error(data.error); }
+    if (!data.nodes || !data.nodes.length) { throw new Error('khong co du lieu nodes'); }
+
+    allEdges = data.edges || [];
+
+    nodesDS = new vis.DataSet(data.nodes.map(function(n) {
+      var bg = TYPE_COLOR[n.type] || '#64748b';
+      return {
+        id: n.id, label: n.label, type: n.type, name: n.name,
+        title: '[' + (TYPE_LABEL[n.type]||n.type) + '] ' + n.label,
+        shape: (n.type === 'equation') ? 'box' : 'dot',
+        size: nodeSize(n),
+        font: {size: (n.type === 'constant' || n.type === 'law' ? 14 : 11), color: '#fff'},
+        color: {background: bg, border: bg, highlight: {background: bg, border: '#fff'}}
+      };
+    }));
+
+    edgesDS = new vis.DataSet(buildEdges());
+
+    var container = document.getElementById('network');
+    st.textContent = 'Đang vẽ...';
+    network = new vis.Network(container, {nodes: nodesDS, edges: edgesDS}, {
+      physics: {enabled: true, solver: 'forceAtlas2Based', stabilization: {iterations: 200},
+                forceAtlas2Based: {gravitationalConstant: -80, centralGravity: 0.01, springLength: 120, springConstant: 0.05}},
+      interaction: {hover: true, tooltipDelay: 120},
+      edges: {smooth: {type: 'continuous'}}
+    });
+
+    st.style.display = 'none';
+    document.getElementById('errbox').style.display = 'none';
+
+    network.on('click', function(p) {
+      var info = document.getElementById('info');
+      if (p.nodes.length === 0) { info.style.display = 'none'; return; }
+      var nid = p.nodes[0];
+      var n = nodesDS.get(nid);
+      var rels = allEdges.filter(function(e) { return e.from === nid || e.to === nid; });
+      var html = '<b>' + n.label + '</b> [' + (TYPE_LABEL[n.type]||n.type) + ']<br>';
+      var out = rels.filter(function(e) { return e.from === nid; });
+      var inc = rels.filter(function(e) { return e.to === nid; });
+      if (out.length) html += '→ ' + out.map(function(e){return '<span style="color:'+(REL_COLOR[e.relation]||'#fff')+'">'+e.relation+'</span> ' + nodesDS.get(e.to).label;}).join('<br>→ ') + '<br>';
+      if (inc.length) html += '← ' + inc.map(function(e){return nodesDS.get(e.from).label + ' (<span style="color:'+(REL_COLOR[e.relation]||'#fff')+'">'+e.relation+'</span>)';}).join('<br>← ');
+      info.innerHTML = html;
+      info.style.display = 'block';
+    });
+
+  } catch (err) {
+    st.textContent = '';
+    var eb = document.getElementById('errbox');
+    eb.style.display = 'block';
+    eb.textContent = 'LỖI: ' + (err && err.message ? err.message : err);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

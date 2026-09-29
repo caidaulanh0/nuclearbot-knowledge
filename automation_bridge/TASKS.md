@@ -1,0 +1,15 @@
+# Danh sách Công việc (TASKS)
+
+- [x] **T-001**: Thiết lập repo Git, 3 file nền tảng (ARCHITECTURE, TASKS, STATE) và định nghĩa Hợp đồng Giao diện (Contracts) cho 9 Actions. (Đã hoàn thành)
+- [x] **T-002**: Cài đặt kiến trúc thư mục, môi trường ảo Python và tạo khung sườn `automation_bridge.py`. (Đã hoàn thành)
+- [x] **T-003**: Implement action `run_simulation` (có sandbox cô lập thư mục, timeout, và log). (Đã hoàn thành)
+- [x] **T-004**: Implement action `read_output` và `compare_experiment`. (Đã hoàn thành)
+- [x] **T-005**: Implement action `propose_parameter_change` (cổng duyệt thủ công cho User). (Đã hoàn thành)
+- [x] **T-006**: Implement action `verify_claims` (Reflexion layer, dùng 1% relative tolerance) và kết nối `query_kg`. (Đã hoàn thành)
+- [x] **ADR-002**: Lộ trình 7 bước kiến trúc V4 (Qdrant WSL2 + bge-m3 SentenceTransformers).
+- [x] **T-007**: (B3) Code Ingestion Pipeline `ingest.py` (PyMuPDF/Marker, bge-m3, chunking bảo toàn toán học). (Đã hoàn thành)
+- [x] **T-008**: (B4) Chạy nhúng 2.081 tài liệu từ KHO_DU_LIEU_AI vào Qdrant. (Đã hoàn thành)
+- [x] **T-009**: (B5) Cập nhật action `query_rag` truy vấn trực tiếp Qdrant. (Đã hoàn thành)
+- [x] **T-010**: (B6 & B7) Cập nhật config model Qwen3, ráp vòng lặp ReAct Loop, Test End-to-End. (Đã hoàn thành)
+- [x] **T-012**: Implement action `calculate` bằng SymPy và fix logic tokenization cho `query_kg`. (Đã hoàn thành)
+- [x] **T-011**: Refactor (Cleanup): Chuyển đổi toàn bộ đường dẫn tương đối sang tuyệt đối. (Đã hoàn thành)

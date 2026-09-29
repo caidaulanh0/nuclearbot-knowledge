@@ -1,0 +1,50 @@
+name: Run NuclearBot Training & Data Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      drive_folder_url:
+        description: 'Link chia sẻ Google Drive (hoặc Folder ID) chứa file PDF'
+        required: false
+        default: ''
+      max_pdfs:
+        description: 'Số lượng file PDF tối đa cần xử lý (0 = tất cả)'
+        required: false
+        default: '50'
+
+jobs:
+  run-pipeline:
+    name: Xu Ly Du Lieu & Tinh Toan Song Song
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Kéo mã nguồn từ GitHub
+        uses: actions/checkout@v4
+
+      - name: 2. Cài đặt môi trường Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 3. Cài đặt các gói phụ thuộc (PyMuPDF, SymPy, gdown...)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r automation_bridge/requirements.txt gdown
+
+      - name: 4. Tải file PDF từ Google Drive (nếu có cung cấp link)
+        if: ${{ github.event.inputs.drive_folder_url != '' }}
+        run: |
+          python scripts/download_drive.py --url "${{ github.event.inputs.drive_folder_url }}" --output "downloaded_pdfs"
+
+      - name: 5. Chạy Pipeline bóc tách & tính toán (Multiprocessing 4 vCPU)
+        run: |
+          python scripts/run_nuclear_pipeline.py --pdf-dir "downloaded_pdfs" --max-pdfs ${{ github.event.inputs.max_pdfs }} --output-dir "pipeline_output"
+
+      - name: 6. Đóng gói và lưu kết quả (Artifacts)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ket-qua-pipeline-nuclearbot
+          path: pipeline_output/
+          retention-days: 14

@@ -1,0 +1,32 @@
+# Virtual Environments
+venv/
+**/venv/
+env/
+**/env/
+ENV/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Large files & PDFs (Dùng Google Drive để lưu trữ và tải về qua GitHub Actions)
+*.pdf
+**/*.pdf
+
+# Logs & temporary files
+*.log
+**/*.log
+chat_server.err.log
+chat_server.log
+automation_bridge/sandbox_runs/
+sandbox_runs/
+**/.git_backup/
+.git_backup/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini

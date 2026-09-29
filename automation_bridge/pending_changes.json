@@ -1,0 +1,12 @@
+{
+    "status": "pending_approval",
+    "feedback": "",
+    "parameters": {
+        "V0": {
+            "current": 50.0,
+            "proposed": 49.0,
+            "reason": "Khớp U_surface thực nghiệm -24.5 MeV"
+        }
+    },
+    "instruction": "Đổi 'status' thành 'approved' hoặc 'rejected', nhập 'feedback' và lưu file này lại."
+}

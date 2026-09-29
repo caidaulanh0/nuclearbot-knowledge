@@ -1,0 +1,8 @@
+{
+    "ollama_base_url": "http://127.0.0.1:11434",
+    "qdrant_base_url": "http://127.0.0.1:6333",
+    "model_name": "qwen3:14b",
+    "embedding_model": "bge-m3",
+    "kb_path": "core_kb.db",
+    "sandbox_base_dir": "./sandbox_runs"
+}

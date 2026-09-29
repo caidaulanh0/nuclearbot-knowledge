@@ -1,0 +1,8 @@
+# The neutron within the deuteron as a surrogate for neutron-induced reactions
+
+**DOI:** https://doi.org/10.1142/s021830131950109x
+
+## Abstract
+ We propose the use of neutron poisons in reactions induced by radioactive beams as a test of theoretical models aiming to relate neutron capture in nuclei with neutron surrogate reactions such as ([Formula: see text]) reactions. We exploit the approximations necessary to obtain a direct relation between the two reactions: surrogate versus neutron capture. We also show how this is intimately related to the momentum distribution of the neutron within the deuteron. The models we use are based on the theory of inclusive breakup reactions commonly employed in the treatment of incomplete fusion and surrogate method. Such theories were developed in the 1980s by Ichimura, Austern and Vincent [Phys. Rev. C 32 (1985) 431], Udagawa and Tamura [Phys. Rev. C 24 (1981) 1348] and Hussein and McVoy [Nucl. Phys. A 445 (1985) 124]. We use these theories to derive an expression for the proton yield in the reaction [Formula: see text]. The capture reaction [Formula: see text] is then extracted using reasonable approximations. By recalling an old method proposed by Serber [Phys. Rev. 80 (1950) 1098; Proc. Roy. Soc. A 208 (1951) 559] we explain how the momentum distribution of neutrons within the deuteron will depend on the short-range dependence of the nucleon–nucleon force. The relevance of our work to nucleosynthesis in the rapid neutron capture process is emphasized. 
+
+*Note: This paper is likely behind a paywall (e.g. Physical Review C). The abstract is provided for the AI's semantic search.*
